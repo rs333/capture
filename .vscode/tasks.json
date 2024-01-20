@@ -10,7 +10,8 @@
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
-                "-lX11"
+                "-lX11",
+                "-lXtst"
             ],
             "options": {
                 "cwd": "${fileDirname}"

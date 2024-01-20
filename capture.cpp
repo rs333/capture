@@ -1,14 +1,49 @@
 #include <iostream>
-#include <string>
+#include <string.h>
 #include <unistd.h>
 #include <vector>
 #include <algorithm>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h> // Needed for XGetPixel
+#include <X11/extensions/XTest.h>
 
-const std::vector<char> BRIGHTNESS_CHARS = {' ', '.', ',', 'o', 'x', 'X', '0', '@'};
+const std::vector<char> BRIGHTNESS_CHARS = {' ', '.', ',', 'o', 'x', 'X', '0', 'W', '@'};
 
+void mouseClick(Display *display, Window &window){
+    int propagate = false;
+    long event_mask = 0;
+    XEvent event;
+    memset(&event, 0, sizeof(event));
+    event.type = ButtonPress;
+    event.xbutton.button = Button1;
+    event.xbutton.display = display;
+    event.xbutton.send_event = true;
+    event.xbutton.x = 10;
+    event.xbutton.y = 10;
+    event.xbutton.x_root = 10;
+    event.xbutton.y_root = 10;
+    
+    // event.xbutton.same_screen = true;
+
+    int error = XSendEvent(display, window, propagate, event_mask, &event);
+    if( error == 0 ){
+        std::cout << "Error\n";
+    }
+    XFlush(display);
+    usleep(100000);
+
+    event.type = ButtonRelease;
+    event.xbutton.state = ControlMask;
+    
+    error = XSendEvent(display, window, propagate, event_mask, &event);
+    if( error == 0 ){
+        std::cout << "Error\n";
+    }
+    XFlush(display);
+    usleep(100000);
+
+}
 //
 // A simple program to demonstrate capture the screen and outputing the data 
 // as ascii art.
@@ -57,7 +92,12 @@ int main(int argc, char *argv[])
     // move the mouse to the middle of the portion you are capturing.
     XWarpPointer(display, rootWindow, rootWindow, 0, 0, 0, 0, width/2, height/2 );
     // To simulate a click, check out XTestFakeButtonEvent & XSendEvent
-
+    XTestFakeButtonEvent(display, 1, true, CurrentTime);
+    XTestFakeButtonEvent(display, 1, false, CurrentTime);
+    XTestFakeButtonEvent(display, 1, true, CurrentTime);
+    XTestFakeButtonEvent(display, 1, false, CurrentTime);
+    sleep(1);
+    // mouseClick(display,rootWindow);
     image = XGetImage( display, rootWindow, colStart, rowStart, width, height, AllPlanes, ZPixmap);
     
 
@@ -70,7 +110,7 @@ int main(int argc, char *argv[])
             uint16_t red = (colors.pixel & image->red_mask) >> 16;
             uint16_t green = (colors.pixel & image->green_mask) >> 8;
             uint16_t blue = (colors.pixel & image->blue_mask);
-            uint16_t brightness = (red + green + blue) / (3 * 255 / 8);
+            uint16_t brightness = (red + green + blue) / (3 * 255 / BRIGHTNESS_CHARS.size());
             brightness = (brightness > BRIGHTNESS_CHARS.size() - 1 ? BRIGHTNESS_CHARS.size() - 1 : brightness);
 
             std::cout << BRIGHTNESS_CHARS[brightness];
